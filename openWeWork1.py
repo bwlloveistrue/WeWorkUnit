@@ -3,6 +3,7 @@
 # Create Date: 2020.07.21
 import datetime
 import sys
+import traceback
 
 import pykeyboard
 import win32con
@@ -218,39 +219,6 @@ def DebugLogger(log_info, file_path):
     except Exception as e:
         print("Failed to record debug log. Reason:\n %s" % str(e))
 
-global hwnd_title
-hwnd_title = dict()  # 所有句柄字典
-global customInfoDic
-customInfoDic = dict()  # 客户信息字典
-global resultList
-resultList = []  # 结果集
-global BASE_PATH
-BASE_PATH = os.path.dirname(os.path.abspath(__file__))
-global CONFIG_INI
-CONFIG_INI = os.path.join(BASE_PATH, "config", "config.ini")
-global WEWORK_PATH
-WEWORK_PATH = os.path.join(BASE_PATH, "test_plan", IniReader(CONFIG_INI, "WeWorkAddress", "WeWorkAddress").data)
-global log_path
-log_path = os.path.join(BASE_PATH, 'log', "run_%s.log" % datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
-global tool_name
-tool_name = WEWORK_PATH
-global wechatWindowTitle
-wechatWindowTitle = u"企业微信"
-global wechatWindowClassName
-wechatWindowClassName = u"WeWorkWindow"
-global addCustomerWindowTitle
-addCustomerWindowTitle = u"添加客户"
-global addCustomerWindowClassName
-addCustomerWindowClassName = u"SearchExternalsWnd"
-global noCustomerConfirmTitle
-noCustomerConfirmTitle = u"该用户不存在"
-global noCustomerConfirmClassName
-noCustomerConfirmClassName = u"WeWorkMessageBoxFrame"
-global authenticMessageConfirmTitle
-authenticMessageConfirmTitle = u"输入认证信息"
-global authenticMessageClassName
-authenticMessageClassName = u"InputReasonWnd"
-
 
 def get_all_hwnd(hwnd, mouse):
     if win32gui.IsWindow(hwnd) and win32gui.IsWindowEnabled(hwnd) and win32gui.IsWindowVisible(hwnd):
@@ -301,9 +269,9 @@ def run():
     while True:
         if len(resultList) >= customerLen:
             return
-        if i > 10:
+        if i > customerLen:
             return
-        DebugLogger('插入数据：' % str(customInfoDic),log_path)
+        DebugLogger('插入数据：%s ' % str(customInfoDic),log_path)
         iteratorProcess(customInfoDic, i)
         i = i + 1
 
@@ -396,8 +364,8 @@ def iteratorProcess(customInfoDic, times):
                 resultList.append(resultTupl)
                 del customInfoDic[mobileV]
                 sleep(1)
-            else:
-                for i in range(2):
+            else:1780927801
+            for i in range(2):
                     DebugLogger('添加确认按钮找到！', log_path)
                     if i == 0:
                         app.app.window(title=addCustomerWindowTitle, class_name=addCustomerWindowClassName).click_input(
@@ -425,7 +393,8 @@ def iteratorProcess(customInfoDic, times):
                         sleep(.5)
                         resultTupl = (mobileV, authenticMessage, '插入成功')
                         resultList.append(resultTupl)
-                        del customInfoDic[mobileV]
+                        if i == 0:
+                            del customInfoDic[mobileV]
                         sleep(3)
         DebugLogger('导入第%s' % times + '次成功！', log_path)
     except Exception as e:
@@ -440,6 +409,39 @@ def iteratorProcess(customInfoDic, times):
             app.close(addCustomerWindowTitle)
         app.close(wechatWindowTitle)
         DebugLogger('导入第%s' % times + '次失败！，错误原因：%s' %str(sys.exc_info()), log_path)
+        traceback.print_exc(file=open(log_path, 'a'))
 
 if __name__ == "__main__":
+    global hwnd_title
+    hwnd_title = dict()  # 所有句柄字典
+    global customInfoDic
+    customInfoDic = dict()  # 客户信息字典
+    global resultList
+    resultList = []  # 结果集
+    global BASE_PATH
+    BASE_PATH = os.path.dirname(os.path.abspath(__file__))
+    global CONFIG_INI
+    CONFIG_INI = os.path.join(BASE_PATH, "config", "config.ini")
+    global WEWORK_PATH
+    WEWORK_PATH = os.path.join(BASE_PATH, "test_plan", IniReader(CONFIG_INI, "WeWorkAddress", "WeWorkAddress").data)
+    global log_path
+    log_path = os.path.join(BASE_PATH, 'log', "run_%s.log" % datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
+    global tool_name
+    tool_name = WEWORK_PATH
+    global wechatWindowTitle
+    wechatWindowTitle = u"企业微信"
+    global wechatWindowClassName
+    wechatWindowClassName = u"WeWorkWindow"
+    global addCustomerWindowTitle
+    addCustomerWindowTitle = u"添加客户"
+    global addCustomerWindowClassName
+    addCustomerWindowClassName = u"SearchExternalsWnd"
+    global noCustomerConfirmTitle
+    noCustomerConfirmTitle = u"该用户不存在"
+    global noCustomerConfirmClassName
+    noCustomerConfirmClassName = u"WeWorkMessageBoxFrame"
+    global authenticMessageConfirmTitle
+    authenticMessageConfirmTitle = u"输入认证信息"
+    global authenticMessageClassName
+    authenticMessageClassName = u"InputReasonWnd"
     run()
