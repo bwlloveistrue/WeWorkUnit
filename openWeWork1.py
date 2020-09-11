@@ -21,6 +21,8 @@ import os
 import logging
 import threading
 
+from xlutils import copy
+
 k = pykeyboard.PyKeyboard()
 
 
@@ -247,30 +249,32 @@ def run():
     # 获取excel数据
     # 获取模板数据信息
     BASE_PATH = os.path.dirname(os.path.abspath(__file__))
-    mouldInfoPath = os.path.join(BASE_PATH, 'customers', 'messageMould.xlsx')
+    mouldInfoPath = os.path.join(BASE_PATH, 'customers', 'messageMould.xls')
     mould_list = xlrd.open_workbook(mouldInfoPath)  # 获取reRun plan file的数据表
     mould_table = mould_list.sheet_by_name('mould')  # 获取sheet名为mould的表
     authenticMessage = str(mould_table.cell_value(1, 0))
-    customerInfoPath = os.path.join(BASE_PATH, 'customers', 'customers.xlsx')
+    global customerInfoPath
+    customerInfoPath = os.path.join(BASE_PATH, 'customers', 'customers.xls')
     customer_list = xlrd.open_workbook(customerInfoPath)  # 获取reRun plan file的数据表
-    table = customer_list.sheet_by_name('customerInfo')  # 获取sheet名为process的表
+    table = customer_list.sheet_by_name('customerInfo')  # 获取sheet名为customerInfo的表
 
     row_count = table.nrows  # 获取行数
     for i in range(1, row_count):
-        ctype = table.cell(i, 2).ctype  # 表格的数据类型
-        cell = table.cell_value(i, 2)
-
-        if ctype == 2 and cell % 1 == 0.0:  # ctype为2且为浮点
-            cell = int(cell)  # 浮点转成整型
-        mobileV = str(cell).replace('-', '')
-        customInfoDic[mobileV] = authenticMessage.format(table.cell_value(i, 1))
+        needInsert = table.cell_value(i, 3)
+        if needInsert is None or needInsert == ''  or needInsert == 'N':
+            ctype = table.cell(i, 2).ctype  # 表格的数据类型
+            cell = table.cell_value(i, 2)
+            if ctype == 2 and cell % 1 == 0.0:  # ctype为2且为浮点
+                cell = int(cell)  # 浮点转成整型
+            mobileV = str(cell).replace('-', '')
+            customInfoDic[mobileV] = authenticMessage.format(table.cell_value(i, 1))
     i = 0
     customerLen = len(customInfoDic)  # 获取所有客户
     while True:
         if len(resultList) >= customerLen:
-            return
+            break
         if i > customerLen:
-            return
+            break
         DebugLogger('插入数据：%s ' % str(customInfoDic),log_path)
         iteratorProcess(customInfoDic, i)
         i = i + 1
@@ -289,6 +293,9 @@ def run():
     work_book.save(os.path.join(customerResultPath, 'result',
                                 "customerResult_{0}.xls".format(datetime.datetime.now().strftime('%Y%m%d%H%M%S'))))
     DebugLogger('导入完成！！', log_path)
+    app = Pywin()
+    app.run(tool_name)
+    app.connect(wechatWindowTitle)
     # 后期准备（将不必要的dialog都删除）
     authenticMessageWindow = win32gui.FindWindow(authenticMessageClassName, authenticMessageConfirmTitle)
     if authenticMessageWindow > 0:
@@ -341,6 +348,10 @@ def iteratorProcess(customInfoDic, times):
             coords=(1848, 40))
         time.sleep(.5)
         for mobileV, authenticMessage in customInfoDicTemp.items():
+            starttime = datetime.datetime.now()
+            if ONE_TIME_NUMBER > 0 and AFTER_ONE_TIME_DELAY > 0 and len(resultList) > 0:
+                if len(resultList) % ONE_TIME_NUMBER == 0:
+                    sleep(AFTER_ONE_TIME_DELAY*60)
             app.app.window(title=addCustomerWindowTitle, class_name=addCustomerWindowClassName).double_click(
                 coords=(74, 90))
             k.press_key(k.delete_key)
@@ -361,41 +372,44 @@ def iteratorProcess(customInfoDic, times):
                     coords=(74, 90))
                 k.press_key(k.delete_key)
                 resultTupl = (mobileV, authenticMessage, '该账号不存在')
+                updateResult(mobileV, '该账号不存在', starttime)
                 resultList.append(resultTupl)
                 del customInfoDic[mobileV]
                 sleep(1)
-            else:1780927801
-            for i in range(2):
-                    DebugLogger('添加确认按钮找到！', log_path)
-                    if i == 0:
-                        app.app.window(title=addCustomerWindowTitle, class_name=addCustomerWindowClassName).click_input(
-                            coords=(304, 188))  # 点击添加按钮
-                    elif i == 1:
-                        app.app.window(title=addCustomerWindowTitle,
-                                       class_name=addCustomerWindowClassName).click_input(
-                            coords=(304, 269))  # 点击添加按钮
-                    sleep(1)
-                    authenticMessageConfirmWindow = win32gui.FindWindow(authenticMessageClassName,
-                                                                        authenticMessageConfirmTitle)
-                    if authenticMessageConfirmWindow > 0:
-                        app.app.window(title=authenticMessageConfirmTitle,
-                                       class_name=authenticMessageClassName).click_input(
-                            coords=(330, 98))  # 点击删除输入框文本icon
-                        sleep(.5)
-                        app.app.window(title=authenticMessageConfirmTitle,
-                                       class_name=authenticMessageClassName).click_input(
-                            coords=(292, 99))  # 点击输入框
-                        sleep(.5)
-                        app.inputText(authenticMessage)
-                        app.app.window(title=authenticMessageConfirmTitle,
-                                       class_name=authenticMessageClassName).click_input(
-                            coords=(171, 168))
-                        sleep(.5)
-                        resultTupl = (mobileV, authenticMessage, '插入成功')
-                        resultList.append(resultTupl)
+            else:
+                for i in range(2):
+                        DebugLogger('添加确认按钮找到！', log_path)
                         if i == 0:
-                            del customInfoDic[mobileV]
-                        sleep(3)
+                            app.app.window(title=addCustomerWindowTitle, class_name=addCustomerWindowClassName).click_input(
+                                coords=(304, 188))  # 点击添加按钮
+                        elif i == 1:
+                            app.app.window(title=addCustomerWindowTitle,
+                                           class_name=addCustomerWindowClassName).click_input(
+                                coords=(304, 269))  # 点击添加按钮
+                        sleep(1)
+                        authenticMessageConfirmWindow = win32gui.FindWindow(authenticMessageClassName,
+                                                                            authenticMessageConfirmTitle)
+                        if authenticMessageConfirmWindow > 0:
+                            app.app.window(title=authenticMessageConfirmTitle,
+                                           class_name=authenticMessageClassName).click_input(
+                                coords=(330, 98))  # 点击删除输入框文本icon
+                            sleep(.5)
+                            app.app.window(title=authenticMessageConfirmTitle,
+                                           class_name=authenticMessageClassName).click_input(
+                                coords=(292, 99))  # 点击输入框
+                            sleep(.5)
+                            app.inputText(authenticMessage)
+                            app.app.window(title=authenticMessageConfirmTitle,
+                                           class_name=authenticMessageClassName).click_input(
+                                coords=(171, 168))
+                            sleep(.5)
+                            resultTupl = (mobileV, authenticMessage, '插入成功')
+                            resultList.append(resultTupl)
+                            if i == 0:
+                                updateResult(mobileV, '插入成功', starttime)
+                                del customInfoDic[mobileV]
+                            sleep(3)
+            sleep((DELAY_TIME))
         DebugLogger('导入第%s' % times + '次成功！', log_path)
     except Exception as e:
         authenticMessageWindow = win32gui.FindWindow(authenticMessageClassName, authenticMessageConfirmTitle)
@@ -411,6 +425,29 @@ def iteratorProcess(customInfoDic, times):
         DebugLogger('导入第%s' % times + '次失败！，错误原因：%s' %str(sys.exc_info()), log_path)
         traceback.print_exc(file=open(log_path, 'a'))
 
+def updateResult(mobile, result, starttime):
+    endtime = datetime.datetime.now();
+    duration = str(endtime - starttime).split(".")[0]
+    customerInfoBook = xlrd.open_workbook(customerInfoPath, formatting_info=True)
+    table = customerInfoBook.sheet_by_name('customerInfo')  # 获取sheet名为customerInfo的表
+
+    row_count = table.nrows  # 获取行数
+    targetRow = 0
+    for i in range(1, row_count):
+        ctype = table.cell(i, 2).ctype  # 表格的数据类型
+        cell = table.cell_value(i, 2)
+        if ctype == 2 and cell % 1 == 0.0:  # ctype为2且为浮点
+            cell = int(cell)  # 浮点转成整型
+        mobileV = str(cell).replace('-', '')
+        if mobileV == mobile:
+            targetRow = i
+    customerInfoBook4write = copy.copy(customerInfoBook)
+    customerInfoSheet = customerInfoBook4write.get_sheet('customerInfo')
+    customerInfoSheet.write(targetRow, 3, 'Y')
+    customerInfoSheet.write(targetRow, 4, result)
+    customerInfoSheet.write(targetRow, 5, duration)
+    customerInfoBook4write.save(customerInfoPath)
+
 if __name__ == "__main__":
     global hwnd_title
     hwnd_title = dict()  # 所有句柄字典
@@ -423,7 +460,13 @@ if __name__ == "__main__":
     global CONFIG_INI
     CONFIG_INI = os.path.join(BASE_PATH, "config", "config.ini")
     global WEWORK_PATH
-    WEWORK_PATH = os.path.join(BASE_PATH, "test_plan", IniReader(CONFIG_INI, "WeWorkAddress", "WeWorkAddress").data)
+    WEWORK_PATH = IniReader(CONFIG_INI, "WeWorkAddress", "WeWorkAddress").data
+    global DELAY_TIME
+    DELAY_TIME = int(IniReader(CONFIG_INI, "timeConfig", "delayTime").data)
+    global ONE_TIME_NUMBER
+    ONE_TIME_NUMBER = int(IniReader(CONFIG_INI, "timeConfig", "oneTimeNumber").data)
+    global AFTER_ONE_TIME_DELAY
+    AFTER_ONE_TIME_DELAY = int(IniReader(CONFIG_INI, "timeConfig", "oneTimeNumber").data)
     global log_path
     log_path = os.path.join(BASE_PATH, 'log', "run_%s.log" % datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
     global tool_name
@@ -444,4 +487,5 @@ if __name__ == "__main__":
     authenticMessageConfirmTitle = u"输入认证信息"
     global authenticMessageClassName
     authenticMessageClassName = u"InputReasonWnd"
+    global app
     run()
