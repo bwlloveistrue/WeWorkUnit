@@ -261,7 +261,7 @@ def run():
     row_count = table.nrows  # 获取行数
     for i in range(1, row_count):
         needInsert = table.cell_value(i, 3)
-        if needInsert is None or needInsert == ''  or needInsert == 'N':
+        if needInsert is None or needInsert == '' or needInsert == 'N':
             ctype = table.cell(i, 2).ctype  # 表格的数据类型
             cell = table.cell_value(i, 2)
             if ctype == 2 and cell % 1 == 0.0:  # ctype为2且为浮点
@@ -275,7 +275,7 @@ def run():
             break
         if i > customerLen:
             break
-        DebugLogger('插入数据：%s ' % str(customInfoDic),log_path)
+        DebugLogger('插入数据：%s ' % str(customInfoDic), log_path)
         iteratorProcess(customInfoDic, i)
         i = i + 1
 
@@ -308,6 +308,7 @@ def run():
         app.close(addCustomerWindowTitle)
     app.close(wechatWindowTitle)
 
+
 def iteratorProcess(customInfoDic, times):
     customInfoDicTemp = customInfoDic.copy()
     app = Pywin()
@@ -318,6 +319,9 @@ def iteratorProcess(customInfoDic, times):
     wechatWindowDialog = win32gui.FindWindow(wechatWindowClassName, wechatWindowTitle)
     win32gui.SetForegroundWindow(wechatWindowDialog)
     weChatWindow = win32gui.GetWindowRect(wechatWindowDialog);
+    left, top, right, bottom = weChatWindow
+    xRatio = (right + left) / 1920
+    yRatio = (bottom + top) / 1040
     DebugLogger('weChatWindow：%s！' % str(weChatWindow), log_path)
     try:
         # 前期准备（将不必要的dialog都删除）
@@ -336,24 +340,24 @@ def iteratorProcess(customInfoDic, times):
 
         # 点击通讯录
         app.app.window(title=wechatWindowTitle, class_name=wechatWindowClassName).click_input(
-            coords=(34, 150))
+            coords=(floatToInt(34 * xRatio), floatToInt(150 * yRatio)))
         time.sleep(.5)
         # 点击新的联系人
         DebugLogger('新的客户元素找到！', log_path)
         app.app.window(title=wechatWindowTitle, class_name=wechatWindowClassName).click_input(
-            coords=(88, 94))
+            coords=(floatToInt(88 * xRatio), floatToInt(94 * yRatio)))
         time.sleep(.5)
         DebugLogger('添加客户Icon元素找到！', log_path)
         app.app.window(title=wechatWindowTitle, class_name=wechatWindowClassName).click_input(
-            coords=(1848, 40))
+            coords=(floatToInt(1848 * xRatio), floatToInt(40 * yRatio)))
         time.sleep(.5)
         for mobileV, authenticMessage in customInfoDicTemp.items():
             starttime = datetime.datetime.now()
             if ONE_TIME_NUMBER > 0 and AFTER_ONE_TIME_DELAY > 0 and len(resultList) > 0:
                 if len(resultList) % ONE_TIME_NUMBER == 0:
-                    sleep(AFTER_ONE_TIME_DELAY*60)
+                    sleep(AFTER_ONE_TIME_DELAY * 60)
             app.app.window(title=addCustomerWindowTitle, class_name=addCustomerWindowClassName).double_click(
-                coords=(74, 90))
+                coords=(floatToInt(74 * xRatio), floatToInt(90 * yRatio)))
             k.press_key(k.delete_key)
             app.inputText(mobileV)
             sleep(.5)
@@ -369,7 +373,7 @@ def iteratorProcess(customInfoDic, times):
 
                 k.press_key(k.enter_key)
                 app.app.window(title=addCustomerWindowTitle, class_name=addCustomerWindowClassName).double_click(
-                    coords=(74, 90))
+                    coords=(floatToInt(74 * xRatio), floatToInt(90 * yRatio)))
                 k.press_key(k.delete_key)
                 resultTupl = (mobileV, authenticMessage, '该账号不存在')
                 updateResult(mobileV, '该账号不存在', starttime)
@@ -378,37 +382,37 @@ def iteratorProcess(customInfoDic, times):
                 sleep(1)
             else:
                 for i in range(2):
-                        DebugLogger('添加确认按钮找到！', log_path)
+                    DebugLogger('添加确认按钮找到！', log_path)
+                    if i == 0:
+                        app.app.window(title=addCustomerWindowTitle, class_name=addCustomerWindowClassName).click_input(
+                            coords=(floatToInt(304 * xRatio), floatToInt(188 * yRatio)))  # 点击添加按钮
+                    elif i == 1:
+                        app.app.window(title=addCustomerWindowTitle,
+                                       class_name=addCustomerWindowClassName).click_input(
+                            coords=(floatToInt(304 * xRatio), floatToInt(269 * yRatio)))  # 点击添加按钮
+                    sleep(1)
+                    authenticMessageConfirmWindow = win32gui.FindWindow(authenticMessageClassName,
+                                                                        authenticMessageConfirmTitle)
+                    if authenticMessageConfirmWindow > 0:
+                        app.app.window(title=authenticMessageConfirmTitle,
+                                       class_name=authenticMessageClassName).click_input(
+                            coords=(floatToInt(330 * xRatio), floatToInt(98 * yRatio)))  # 点击删除输入框文本icon
+                        sleep(.5)
+                        app.app.window(title=authenticMessageConfirmTitle,
+                                       class_name=authenticMessageClassName).click_input(
+                            coords=(floatToInt(292 * xRatio), floatToInt(99 * yRatio)))  # 点击输入框
+                        sleep(.5)
+                        app.inputText(authenticMessage)
+                        app.app.window(title=authenticMessageConfirmTitle,
+                                       class_name=authenticMessageClassName).click_input(
+                            coords=(floatToInt(171 * xRatio), floatToInt(168 * yRatio)))
+                        sleep(.5)
+                        resultTupl = (mobileV, authenticMessage, '插入成功')
+                        resultList.append(resultTupl)
                         if i == 0:
-                            app.app.window(title=addCustomerWindowTitle, class_name=addCustomerWindowClassName).click_input(
-                                coords=(304, 188))  # 点击添加按钮
-                        elif i == 1:
-                            app.app.window(title=addCustomerWindowTitle,
-                                           class_name=addCustomerWindowClassName).click_input(
-                                coords=(304, 269))  # 点击添加按钮
-                        sleep(1)
-                        authenticMessageConfirmWindow = win32gui.FindWindow(authenticMessageClassName,
-                                                                            authenticMessageConfirmTitle)
-                        if authenticMessageConfirmWindow > 0:
-                            app.app.window(title=authenticMessageConfirmTitle,
-                                           class_name=authenticMessageClassName).click_input(
-                                coords=(330, 98))  # 点击删除输入框文本icon
-                            sleep(.5)
-                            app.app.window(title=authenticMessageConfirmTitle,
-                                           class_name=authenticMessageClassName).click_input(
-                                coords=(292, 99))  # 点击输入框
-                            sleep(.5)
-                            app.inputText(authenticMessage)
-                            app.app.window(title=authenticMessageConfirmTitle,
-                                           class_name=authenticMessageClassName).click_input(
-                                coords=(171, 168))
-                            sleep(.5)
-                            resultTupl = (mobileV, authenticMessage, '插入成功')
-                            resultList.append(resultTupl)
-                            if i == 0:
-                                updateResult(mobileV, '插入成功', starttime)
-                                del customInfoDic[mobileV]
-                            sleep(3)
+                            updateResult(mobileV, '插入成功', starttime)
+                            del customInfoDic[mobileV]
+                        sleep(3)
             sleep((DELAY_TIME))
         DebugLogger('导入第%s' % times + '次成功！', log_path)
     except Exception as e:
@@ -422,8 +426,13 @@ def iteratorProcess(customInfoDic, times):
         if addCustomerWindow > 0:
             app.close(addCustomerWindowTitle)
         app.close(wechatWindowTitle)
-        DebugLogger('导入第%s' % times + '次失败！，错误原因：%s' %str(sys.exc_info()), log_path)
+        DebugLogger('导入第%s' % times + '次失败！，错误原因：%s' % str(sys.exc_info()), log_path)
         traceback.print_exc(file=open(log_path, 'a'))
+
+
+def floatToInt(f):
+    return int(f)
+
 
 def updateResult(mobile, result, starttime):
     endtime = datetime.datetime.now();
@@ -447,6 +456,7 @@ def updateResult(mobile, result, starttime):
     customerInfoSheet.write(targetRow, 4, result)
     customerInfoSheet.write(targetRow, 5, duration)
     customerInfoBook4write.save(customerInfoPath)
+
 
 if __name__ == "__main__":
     global hwnd_title
