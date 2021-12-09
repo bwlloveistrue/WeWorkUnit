@@ -17,6 +17,7 @@ import configparser
 import os
 import logging
 import threading
+from pykeyboard import PyKeyboard
 
 k = pykeyboard.PyKeyboard()
 
